@@ -19,6 +19,9 @@ class RSI(Data):
     def __init__(self, OHLC) -> None:
         super().__init__(OHLC)
         self.period = self.rnd_period()
+        self.signal = self.rnd_signal()
+        self.upper_bound_signal = self.signal["upper_bound"]
+        self.lower_bound_signal = self.signal["lower_bound"]
 
     def rnd_period(self) -> int:
         return rnd.randint(1, 50)

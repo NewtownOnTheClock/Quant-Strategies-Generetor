@@ -46,7 +46,11 @@ class SMA(Data):
         return rnd.randint(20, 300)
     
     def calculate(self):
-        return {f"SMA_{self.period}": ta.SMA(self.Close, self.period)}  
+        return {f"SMA_{self.period}": ta.SMA(self.Close, self.period)} 
+    
+    def signal(self):
+        signal = []
+        return {f"Signal_SMA_{self.period}": signal} 
 
 
 class IndicatorsPicker:
@@ -81,6 +85,17 @@ class IndicatorsPicker:
         for k, v in self.selected_indicators.items():
             self.OHLC[k] = v
         return self.OHLC
+    
+
+class StategyGenerator(IndicatorsPicker):
+    def __init__(self, OHLC) -> None:
+        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.indicator_OHLC = IndicatorsPicker(OHLC)
+
+    def long_signal(self):
+        pass
+    
 
 
 strat = IndicatorsPicker(df)

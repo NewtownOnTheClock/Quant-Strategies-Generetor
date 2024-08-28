@@ -1,57 +1,9 @@
-import talib as ta
 import pandas as pd
-from backtesting import Backtest, Strategy
+from indicators import *
 import random as rnd
 import yfinance as yf
 
 df = yf.download("SPY").drop(columns={"Adj Close"})
-
-class Data:
-    def __init__(self, OHLC) -> None:  
-        self.OHLC = OHLC
-        self.Open = OHLC["Open"]
-        self.Close = OHLC["Close"]
-        self.High = OHLC["High"]
-        self.Low = OHLC["Low"]
-
-
-# Momentum Indicators
-class RSI(Data):
-    def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
-        self.period = self.rnd_period()
-        self.signal = self.rnd_bound()
-        self.upper_bound = self.signal["upper_bound"]
-        self.lower_bound = self.signal["lower_bound"]
-
-    def rnd_period(self) -> int:
-        return rnd.randint(1, 50)
-    
-    def rnd_bound(self) -> dict:
-        upper_bound = rnd.randint(50, 100)
-        lower_bound = rnd.randint(1, 49)
-        return {"upper_bound": upper_bound, "lower_bound": lower_bound}
-    
-    def calculate(self):
-        return {f"RSI_{self.period}": ta.RSI(self.Close, self.period)}
-
-   
-# Overlap Studies
-class SMA(Data):
-    def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
-        self.period = self.rnd_period()
-
-    def rnd_period(self) -> int:
-        return rnd.randint(20, 300)
-    
-    def calculate(self):
-        return {f"SMA_{self.period}": ta.SMA(self.Close, self.period)} 
-    
-    def signal(self):
-        signal = []
-        return {f"Signal_SMA_{self.period}": signal} 
-
 
 class IndicatorsPicker:
     def __init__(self, OHLC) -> None:

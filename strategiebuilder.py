@@ -1,9 +1,8 @@
 import pandas as pd
+from fetchdata import Data
 from indicators import *
 import random as rnd
 import yfinance as yf
-
-df = yf.download("SPY").drop(columns={"Adj Close"})
 
 class IndicatorsPicker:
     def __init__(self, OHLC) -> None:
@@ -13,8 +12,6 @@ class IndicatorsPicker:
             RSI(self.OHLC),
             SMA(self.OHLC)
         ]
-
-        self.selected_indicators = self.select_indicators()
     
     def select_indicators(self):
         nb_long_indicators = rnd.randint(1, len(self.indicators))
@@ -23,34 +20,36 @@ class IndicatorsPicker:
         chosen_long_indicators = rnd.sample(self.indicators, k=nb_long_indicators)
         chosen_short_indicator = rnd.sample(self.indicators, k=nb_short_indicators)
 
-        result = {}
-        for long_indicator, short_indicator in zip(chosen_long_indicators, chosen_short_indicator):
-            result["Long"] = long_indicator.calculate()
-            result["Short"] = short_indicator.calculate()
-        return result
+        result = {"Long":{}, "Short":{}}
+        for long_indicator in chosen_long_indicators:
+            result["Long"].update(long_indicator.calculate())
+        for short_indicator in chosen_short_indicator:
+            result["Short"].update(short_indicator.calculate())
     
-
-    def return_df(self) -> pd.DataFrame:
-        for (k_l, v_l), (k_s, v_s) in zip(self.selected_indicators["Long"].items(), self.selected_indicators["Short"].items()):
+        for k_l, v_l in result["Long"].items():
             self.OHLC[k_l] = v_l
+        for k_s, v_s in result["Short"].items():
             self.OHLC[k_s] = v_s
-        return self.OHLC
+        
+        return self.OHLC, result
     
 
 class StategyGenerator(IndicatorsPicker):
     def __init__(self, OHLC) -> None:
         super().__init__(OHLC)
         self.OHLC = OHLC
-        self.indicator_OHLC = IndicatorsPicker(self.OHLC)
+        self.indicator_OHLC, self.indicators_info = IndicatorsPicker(self.OHLC).select_indicators()
         self.possible_indicator_actions = [
             self.crossover(),
             self.crossunder(),
             self.greater_than(),
             self.lower_than(),
         ]
+    
 
     def crossover(self):
-        pass
+        print(self.indicators_info["Long"].keys())
+        print(self.indicators_info["Short"].keys())
 
     def crossunder(self):
         pass
@@ -63,17 +62,14 @@ class StategyGenerator(IndicatorsPicker):
 
     def long_signal(self):
         pass
-    
-'''
-Make sure to specify in the indicatiors if they are each one of them are based on the price of the asset or 
-are they based on a specific bound
-'''
 
-# test = StategyGenerator(df)
-# print(test.long_signal())
 
-strat = IndicatorsPicker(df)
-print(strat.return_df().tail())
+
+
+df_data = Data.get_OHLC()
+
+strat = StategyGenerator(df_data)
+print(strat.indicator_OHLC)
 
 
 

@@ -6,6 +6,9 @@ import talib as ta
 class RSI(Data):
     def __init__(self, OHLC) -> None:
         super().__init__(OHLC)
+        self.indicator_type = {
+            "Relation": "bound_related",
+        }
         self.period = self.rnd_period()
         self.signal = self.rnd_bound()
         self.upper_bound = self.signal["upper_bound"]
@@ -27,6 +30,9 @@ class RSI(Data):
 class SMA(Data):
     def __init__(self, OHLC) -> None:
         super().__init__(OHLC)
+        self.indicator_type = {
+            "Relation": "price_related",
+        }
         self.period = self.rnd_period()
 
     def rnd_period(self) -> int:
@@ -38,7 +44,5 @@ class SMA(Data):
     def signal(self):
         signal = []
         return {f"Signal_SMA_{self.period}": signal} 
-
-
 
 

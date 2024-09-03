@@ -20,18 +20,31 @@ class IndicatorsPicker:
         chosen_long_indicators = rnd.sample(self.indicators, k=nb_long_indicators)
         chosen_short_indicator = rnd.sample(self.indicators, k=nb_short_indicators)
 
-        result = {"Long":{}, "Short":{}}
+        result = {}
+        indicators_info = {"Long": {}, "Short": {}}
+
         for long_indicator in chosen_long_indicators:
-            result["Long"].update(long_indicator.calculate())
+            dict_indicator = long_indicator.calculate()
+            indicator_name = list(dict_indicator.keys())[0]
+            indicator_relation = list(long_indicator.indicator_type.values())[0]
+            result.update(long_indicator.calculate())
+            indicators_info["Long"].update({indicator_name: {"Relation": indicator_relation}})
+
         for short_indicator in chosen_short_indicator:
-            result["Short"].update(short_indicator.calculate())
+            dict_indicator = short_indicator.calculate()
+            indicator_name = list(dict_indicator.keys())[0]
+            indicator_relation = list(short_indicator.indicator_type.values())[0]
+            result.update(short_indicator.calculate())
+            indicators_info["Short"].update({indicator_name: {"Relation": indicator_relation}})
+            
     
-        for k_l, v_l in result["Long"].items():
+        for k_l, v_l in result.items():
             self.OHLC[k_l] = v_l
-        for k_s, v_s in result["Short"].items():
+        for k_s, v_s in result.items():
             self.OHLC[k_s] = v_s
         
-        return self.OHLC, result
+        
+        return self.OHLC, indicators_info
     
 
 class StategyGenerator(IndicatorsPicker):
@@ -48,8 +61,7 @@ class StategyGenerator(IndicatorsPicker):
     
 
     def crossover(self):
-        print(self.indicators_info["Long"].keys())
-        print(self.indicators_info["Short"].keys())
+        print(self.indicators_info)
 
     def crossunder(self):
         pass
@@ -63,7 +75,7 @@ class StategyGenerator(IndicatorsPicker):
     def long_signal(self):
         pass
 
-
+#{"Long": {indicator_name: {"Relation": indicator_relation}, "Short": {"Name": indicator_name, "Relation": indicator_relation}}
 
 
 df_data = Data.get_OHLC()

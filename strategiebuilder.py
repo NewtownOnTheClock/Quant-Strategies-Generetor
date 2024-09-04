@@ -36,13 +36,11 @@ class IndicatorsPicker:
             indicator_relation = list(short_indicator.indicator_type.values())[0]
             result.update(short_indicator.calculate())
             indicators_info["Short"].update({indicator_name: {"Relation": indicator_relation}})
-            
     
         for k_l, v_l in result.items():
             self.OHLC[k_l] = v_l
         for k_s, v_s in result.items():
             self.OHLC[k_s] = v_s
-        
         
         return self.OHLC, indicators_info
     
@@ -59,9 +57,29 @@ class StategyGenerator(IndicatorsPicker):
             self.lower_than(),
         ]
     
+    def categorize_indicators(self):
+        long_price_related = []
+        short_price_related = []
+        long_bound_related = []
+        short_bound_related = []
+
+        for l_ind in self.indicators_info["Long"]:
+            if self.indicators_info["Long"][l_ind]['Relation'] == "price_related":
+                long_price_related.append(l_ind)
+            elif self.indicators_info["Long"][l_ind]['Relation'] == "bound_related":
+                long_bound_related.append(l_ind)
+
+        for s_ind in self.indicators_info["Short"]:
+            if self.indicators_info["Short"][s_ind]['Relation'] == "price_related":
+                short_price_related.append(s_ind)
+            elif self.indicators_info["Short"][s_ind]['Relation'] == "bound_related":
+                short_bound_related.append(s_ind)
+
+
+        print(long_price_related, short_price_related)
 
     def crossover(self):
-        print(self.indicators_info)
+        pass
 
     def crossunder(self):
         pass
@@ -75,13 +93,11 @@ class StategyGenerator(IndicatorsPicker):
     def long_signal(self):
         pass
 
-#{"Long": {indicator_name: {"Relation": indicator_relation}, "Short": {"Name": indicator_name, "Relation": indicator_relation}}
-
 
 df_data = Data.get_OHLC()
 
 strat = StategyGenerator(df_data)
-print(strat.indicator_OHLC)
+strat.categorize_indicators()
 
 
 

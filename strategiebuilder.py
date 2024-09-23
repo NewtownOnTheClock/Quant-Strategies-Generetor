@@ -39,15 +39,52 @@ class IndicatorsPicker:
             indicator_name = list(dict_indicator.keys())[0]
             indicator_relation = list(long_indicator.indicator_type.values())[0]
             result.update(long_indicator.calculate())
-            indicators_info["Long"].update({indicator_name: {"Relation": indicator_relation}})
+            if indicator_relation == "bound_related":
+                indicator_upper_bound = long_indicator.upper_bound
+                indicator_lower_bound = long_indicator.lower_bound
+            
+                indicators_info["Long"].update({
+                    indicator_name: {
+                        "Relation": indicator_relation,
+                        "Bounds": {
+                            "Upper": indicator_upper_bound,
+                            "Lower": indicator_lower_bound
+                        }
+                    }
+                })
+            else:
+                indicators_info["Long"].update({
+                indicator_name: {
+                    "Relation": indicator_relation,
+                }
+            })
+        
 
         for short_indicator in chosen_short_indicator:
             dict_indicator = short_indicator.calculate()
             indicator_name = list(dict_indicator.keys())[0]
             indicator_relation = list(short_indicator.indicator_type.values())[0]
             result.update(short_indicator.calculate())
-            indicators_info["Short"].update({indicator_name: {"Relation": indicator_relation}})
-    
+            if indicator_relation == "bound_related":
+                indicator_upper_bound = short_indicator.upper_bound
+                indicator_lower_bound = short_indicator.lower_bound
+               
+                indicators_info["Short"].update({
+                indicator_name: {
+                    "Relation": indicator_relation,
+                    "Bounds": {
+                        "Upper": indicator_upper_bound,
+                        "Lower": indicator_lower_bound
+                    }
+                }
+            })
+            else:
+                indicators_info["Short"].update({
+                indicator_name: {
+                    "Relation": indicator_relation,
+                }
+            })
+
         for k_l, v_l in result.items():
             self.OHLC[k_l] = v_l
         for k_s, v_s in result.items():
@@ -56,13 +93,11 @@ class IndicatorsPicker:
         return self.OHLC, indicators_info
     
 
-class StategyGenerator(IndicatorsPicker):
-    def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
-        self.OHLC = OHLC
-        self.OHLC_and_indicators, self.indicators_info = IndicatorsPicker(OHLC).select_indicators()
-        self.lng_price_related, self.shrt_price_related, self.lng_bnd_realted, self.shrt_bnd_related = self.categorize_indicators()
-
+class StrategyGenerator(IndicatorsPicker):
+    def __init__(self, ticker="rnd") -> None:
+        self.choosen_ticker, self.OHLC = Data.get_OHLC(ticker)
+        self.OHLC_and_indicators, self.indicators_info = IndicatorsPicker(self.OHLC).select_indicators()
+        self.lng_price_related, self.shrt_price_related, self.lng_bnd_related, self.shrt_bnd_related = self.categorize_indicators()
     
     def categorize_indicators(self) -> tuple[list]:
         long_price_related = []
@@ -143,17 +178,36 @@ class StategyGenerator(IndicatorsPicker):
             second_ind_data_lagged = self.OHLC_and_indicators[self.shrt_price_related[1]].shift(1)
 
             results.update({f"S_Signal_{self.shrt_price_related[0]}_crossu_{self.shrt_price_related[1]}": np.where(
-                (first_ind_data > second_ind_data) & 
-                (first_ind_data_lagged <= second_ind_data_lagged), -1, 0)})
+                (first_ind_data < second_ind_data) & 
+                (first_ind_data_lagged >= second_ind_data_lagged), -1, 0)})
             
         return results
 
-    def greater_than(self):
-        results = {}
-        pass
 
-    def lower_than(self):
-        pass
+    def greater_than(self) -> dict:
+        results = {}
+        for long_ind in self.lng_bnd_related:
+            ind_data = self.OHLC_and_indicators[long_ind]
+            previous_ind_data = self.OHLC_and_indicators[long_ind].shift(1)
+            upper_bound = self.indicators_info["Long"][long_ind]["Bounds"]["Upper"]
+
+            results.update({f"L_Signal_{long_ind}_greater_ubound": np.where(
+                (ind_data > upper_bound) & 
+                (previous_ind_data <= upper_bound), 1, 0)})
+        return results
+
+    def lower_than(self) -> dict:
+        results = {}
+        for short_ind in self.shrt_bnd_related:
+            ind_data = self.OHLC_and_indicators[short_ind]
+            previous_ind_data = self.OHLC_and_indicators[short_ind].shift(1)
+            lower_bound = self.indicators_info["Short"][short_ind]["Bounds"]["Lower"]
+
+            results.update({f"S_Signal_{short_ind}_lower_lbound": np.where(
+                (ind_data < lower_bound) & 
+                (previous_ind_data >= lower_bound), -1, 0)})
+        return results
+
 
     def signal(self) -> pd.DataFrame:
         signal_created = {"Long": [], "Short": []}
@@ -162,43 +216,48 @@ class StategyGenerator(IndicatorsPicker):
             signal_info = self.crossover(pair_crossover=False)
             signal_name = next(iter(signal_info))
             signal_value = next(iter(signal_info.values()))
-            signal_created["Long"].append(signal_info)
+            signal_created["Long"].append(signal_name)
             self.OHLC_and_indicators[signal_name] = signal_value
 
         elif len(self.lng_price_related) == 2:
             signal_info = self.crossover(pair_crossover=True)
             signal_name = next(iter(signal_info))
             signal_value = next(iter(signal_info.values()))
-            signal_created["Long"].append(signal_info)
+            signal_created["Long"].append(signal_name)
             self.OHLC_and_indicators[signal_name] = signal_value
         
         if len(self.shrt_price_related) == 1:
             signal_info = self.crossunder(pair_crossunder=False)
             signal_name = next(iter(signal_info))
             signal_value = next(iter(signal_info.values()))
-            signal_created["Short"].append(signal_info)
+            signal_created["Short"].append(signal_name)
             self.OHLC_and_indicators[signal_name] = signal_value
             
         elif len(self.shrt_price_related) == 2:
             signal_info = self.crossunder(pair_crossunder=True)
             signal_name = next(iter(signal_info))
             signal_value = next(iter(signal_info.values()))
-            signal_created["Short"].append(signal_info)
+            signal_created["Short"].append(signal_name)
             self.OHLC_and_indicators[signal_name] = signal_value
         
-        long_signals = signal_created["Long"]
-        short_signals = signal_created["Short"]
+        if len(self.lng_bnd_related) > 0:
+            lbound_signal_info = self.greater_than()
+            lbound_signal_name = next(iter(lbound_signal_info))
+            lbound_signal_value = next(iter(lbound_signal_info.values()))
+            signal_created["Long"].append(lbound_signal_name)
+            self.OHLC_and_indicators[lbound_signal_name] = lbound_signal_value
 
+        if len(self.shrt_bnd_related) > 0:
+            sbound_signal_info = self.lower_than()
+            sbound_signal_name = next(iter(sbound_signal_info))
+            sbound_signal_value = next(iter(sbound_signal_info.values()))
+            signal_created["Short"].append(sbound_signal_name)
+            self.OHLC_and_indicators[sbound_signal_name] = sbound_signal_value
 
+        long_signals_names = signal_created["Long"]
+        short_signals_names = signal_created["Short"]
+        all_signal = [*long_signals_names, *short_signals_names]
 
-
-        return self.OHLC_and_indicators
-        
-
-
-df_data = Data.get_OHLC()
-
-strat = StategyGenerator(df_data)
-print(strat.indicators_info) 
-print(strat.signal())
-
+        self.OHLC_and_indicators["Signal"] = self.OHLC_and_indicators[[ind for ind in all_signal]].sum(axis=1)
+    
+        return self.OHLC_and_indicators, self.indicators_info

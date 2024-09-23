@@ -1,5 +1,6 @@
 import yfinance as yf
 import pandas as pd
+import random as rnd
 
 class Data:
     def __init__(self, OHLC) -> None:  
@@ -9,9 +10,14 @@ class Data:
         self.Low = OHLC["Low"]
         self.Close = OHLC["Close"]
 
-    @classmethod
-    def get_OHLC(self) -> pd.DataFrame:
-        df: pd.DataFrame = yf.download(tickers="SPY", start="2020-01-01")
-        df = df.drop(columns={"Adj Close"})
-        return df
+        self.ticker_list = ["SPY", "QQQ", "BTC-USD", "ETH-USD"]
 
+
+    def get_OHLC(self, ticker="rnd", start="2015-01-01", end=None) -> pd.DataFrame:
+        if ticker == "rnd":
+            rnd_pick = rnd.choice(["SPY", "QQQ", "BTC-USD", "ETH-USD"])
+            df: pd.DataFrame = yf.download(tickers=rnd_pick, start=start, end=end).drop(columns={"Adj Close"})
+            return rnd_pick, df
+        else:
+            df: pd.DataFrame = yf.download(tickers=ticker, start=start, end=end).drop(columns={"Adj Close"})
+            return ticker, df

@@ -15,7 +15,7 @@ class RSI(Data):
         self.lower_bound = self.signal["lower_bound"]
 
     def rnd_period(self) -> int:
-        return rnd.randint(1, 50)
+        return rnd.randint(2, 50)
     
     def rnd_bound(self) -> dict:
         upper_bound = rnd.randint(50, 99)

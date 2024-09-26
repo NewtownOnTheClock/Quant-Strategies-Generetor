@@ -59,7 +59,6 @@ class IndicatorsPicker:
                 }
             })
         
-
         for short_indicator in chosen_short_indicator:
             dict_indicator = short_indicator.calculate()
             indicator_name = list(dict_indicator.keys())[0]
@@ -260,4 +259,4 @@ class StrategyGenerator(IndicatorsPicker):
 
         self.OHLC_and_indicators["Signal"] = self.OHLC_and_indicators[[ind for ind in all_signal]].sum(axis=1)
     
-        return self.OHLC_and_indicators, self.indicators_info
+        return self.OHLC_and_indicators, self.indicators_info, self.choosen_ticker

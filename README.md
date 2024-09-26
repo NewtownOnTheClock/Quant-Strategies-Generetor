@@ -10,6 +10,10 @@ The framework [backtesting.py](https://github.com/kernc/backtesting.py) is used 
 
 ## Installation
 The use of a [virtual environement](https://docs.python.org/3/library/venv.html) and python 3.12 is required
-```$ Git clone https://github.com/NewtownOnTheClock/Quant-Strategies-Generetor.git```
-```$ pip install -r requirements.txt```
+
+```
+$ git clone https://github.com/NewtownOnTheClock/Quant-Strategies-Generetor.git
+
+$ pip install -r requirements.txt
+```
 

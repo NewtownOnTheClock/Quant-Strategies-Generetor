@@ -1,4 +1,4 @@
-Backtesting==0.3.3
+Backtesting @ git+https://github.com/kernc/backtesting.py.git@0ce24d80b1bcb8120d95d31dc3bb351b1052a27d
 beautifulsoup4==4.12.3
 bokeh==3.5.1
 certifi==2024.7.4

@@ -11,6 +11,9 @@ class IndicatorsPicker:
         self.indicators = [
             # Momentum indicator
             RSI(self.OHLC),
+            ADX(self.OHLC),
+            ADXR(self.OHLC),
+            APO(self.OHLC),
 
             # Overlap studies
             SMA(self.OHLC),

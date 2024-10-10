@@ -14,6 +14,9 @@ class IndicatorsPicker:
             ADX(self.OHLC),
             ADXR(self.OHLC),
             APO(self.OHLC),
+            BOP(self.OHLC),
+            CCI(self.OHLC),
+            CMO(self.OHLC),
 
             # Overlap studies
             SMA(self.OHLC),

@@ -96,6 +96,72 @@ class APO(Data):
         return {f"APO_{self.fast_period}_{self.slow_period}": ta.APO(self.Close, self.fast_period, self.slow_period, matype=0)}
 
 
+class BOP(Data):
+    def __init__(self, OHLC) -> None:
+        super().__init__(OHLC)
+        self.indicator_type = {
+            "Relation": "bound_related",
+        }
+        self.period = 'No period'
+        self.signal = self.rnd_bound()
+        self.upper_bound = self.signal["upper_bound"]
+        self.lower_bound = self.signal["lower_bound"]
+
+    def rnd_bound(self) -> dict:
+        upper_bound = 0
+        lower_bound = 0
+        return {"upper_bound": upper_bound, "lower_bound": lower_bound}
+
+    def calculate(self) -> dict:
+        return {f"BOP": ta.BOP(self.Open, self.High, self.Low, self.Close)}
+
+
+class CCI(Data):
+    def __init__(self, OHLC) -> None:
+        super().__init__(OHLC)
+        self.indicator_type = {
+            "Relation": "bound_related",
+        }
+        self.period = self.rnd_period()
+        self.signal = self.rnd_bound()
+        self.upper_bound = self.signal["upper_bound"]
+        self.lower_bound = self.signal["lower_bound"]
+
+    def rnd_period(self) -> int:
+        return rnd.randint(2, 50)
+
+    def rnd_bound(self) -> dict:
+        upper_bound = rnd.randint(25, 300)
+        lower_bound = rnd.randint(-300, 25)
+        return {"upper_bound": upper_bound, "lower_bound": lower_bound}
+
+    def calculate(self) -> dict:
+        return {f"CCI_{self.period}": ta.CCI(self.High, self.Low, self.Close, self.period)}
+
+
+class CMO(Data):
+    def __init__(self, OHLC) -> None:
+        super().__init__(OHLC)
+        self.indicator_type = {
+            "Relation": "bound_related",
+        }
+        self.period = self.rnd_period()
+        self.signal = self.rnd_bound()
+        self.upper_bound = self.signal["upper_bound"]
+        self.lower_bound = self.signal["lower_bound"]
+
+    def rnd_period(self) -> int:
+        return rnd.randint(2, 50)
+
+    def rnd_bound(self) -> dict:
+        upper_bound = rnd.randint(25, 75)
+        lower_bound = rnd.randint(-75, 25)
+        return {"upper_bound": upper_bound, "lower_bound": lower_bound}
+
+    def calculate(self) -> dict:
+        return {f"CMO_{self.period}": ta.CMO(self.Close, self.period)}
+    
+
 # Overlap Studies
 class SMA(Data):
     def __init__(self, OHLC) -> None:

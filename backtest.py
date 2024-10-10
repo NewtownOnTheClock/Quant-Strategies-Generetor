@@ -1,31 +1,20 @@
 from backtesting import Strategy, Backtest
 from strategiebuilder import StrategyGenerator
-from pathlib import Path
 import pandas as pd
 import numpy as np
 import datetime as dt
-import os
 
-# Init the folders
-def init_folders():
-    output_dir = Path("GeneratedDatas/graphs/")
-    data_dir = Path("Datas")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    data_dir.mkdir(parents=True, exist_ok=True)
-    return
 
-def check_existing_indicators_combination(df_file_path, indicators_info: dict) -> bool:
-    try:
-        df = pd.read_csv(df_file_path)
-        is_in = indicators_info in df["indicators_used"].values
-        if is_in:
-            raise Exception(f"{dt.datetime.now()}: indicators combination already used!")
-        return is_in
-    
-    except Exception:
-        print(f"{dt.datetime.now()}: tested backtest file unexistant or problematic")
-        return 
-        
+def db_exist(db_con):
+    sql = "SELECT * from outputs"
+    cur = db_con.cursor()
+    cur.execute(sql)
+    val = cur.fetchone()
+    if val is not None and val[0] is not None:
+        return True
+    else:
+        return False
+
 
 class SignalStrategy(Strategy):
     def init(self):
@@ -41,8 +30,8 @@ class SignalStrategy(Strategy):
                 self.position.close()
 
 
-def runBacktest(cash=1_000_000):
-    tested_backtests_path = "GeneratedDatas/tested_backtests.csv"
+def runBacktest(db_con, cash=1_000_000):
+    #tested_backtests_path = "GeneratedDatas/tested_backtests.csv"
     col_to_keep = ["Start", 
                    "End", 
                    "Duration", 
@@ -60,53 +49,87 @@ def runBacktest(cash=1_000_000):
                    "Avg. Drawdown [%]", 
                    "Max. Drawdown Duration", 
                    "Avg. Drawdown Duration", 
-                   "# Trades,Win Rate [%]", 
+                   "# Trades",
+                   "Win Rate [%]", 
                    "Best Trade [%]", 
                    "Worst Trade [%]", 
                    "Avg. Trade [%]", 
                    "Max. Trade Duration", 
                    "Avg. Trade Duration", 
-                   "Profit Factor,Expectancy [%]", 
-                   "SQN","Kelly Criterion", 
+                   "Profit Factor",
+                   "Expectancy [%]", 
+                   "SQN",
+                   "Kelly Criterion", 
                    "indicators_used",
                    "ticker",
                    "datetime"]
     
-    for i in range(200):
+
         # Get the OHLC data
-        OHLC, indicators_info, ticker = StrategyGenerator().signal()
-        try:
-            existing_indicators_combination = check_existing_indicators_combination(tested_backtests_path, indicators_info=indicators_info)
-            if existing_indicators_combination:
-                continue
+    OHLC, indicators_info, ticker = StrategyGenerator().signal()
+    try:
+
+        bt = Backtest(OHLC, SignalStrategy, cash=cash)
+        stats: pd.DataFrame = bt.run().to_frame().T
+        
+        stats["indicators_used"] = str(indicators_info)
+        stats["ticker"] = ticker
+        stats["datetime"] = dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        stats = stats.drop(columns={col for col in stats.columns if col not in col_to_keep})
+        
+        stats = stats.astype({
+            "Start": str,
+            "End": str,
+            "Duration": str,
+            "Exposure Time [%]": float,
+            "Equity Final [$]": float,
+            "Equity Peak [$]": float,
+            "Return [%]": float,
+            "Buy & Hold Return [%]": float,
+            "Return (Ann.) [%]": float,
+            "Volatility (Ann.) [%]": float,
+            "Sharpe Ratio": float, 
+            "Sortino Ratio": float, 
+            "Calmar Ratio": float, 
+            "Max. Drawdown [%]": float, 
+            "Avg. Drawdown [%]": float, 
+            "Max. Drawdown Duration": str, 
+            "Avg. Drawdown Duration": str, 
+            "# Trades": int,
+            "Win Rate [%]": float, 
+            "Best Trade [%]": float, 
+            "Worst Trade [%]": float, 
+            "Avg. Trade [%]": float, 
+            "Max. Trade Duration": str, 
+            "Avg. Trade Duration": str, 
+            "Profit Factor": float,
+            "Expectancy [%]": float, 
+            "SQN": float,
+            "Kelly Criterion": float, 
+            "indicators_used": str,
+            "ticker": str,
+            "datetime": str
+        })
+
+        print("Sharpe Ratio tested", round(stats["Sharpe Ratio"][0], 3), sep=" = ")
+        
+        if np.isnan(stats["Sharpe Ratio"][0]):
+            return
+
+        if not db_exist(db_con=db_con):
+            stats.to_sql(name='outputs', con=db_con, if_exists="append", index=False)
+        else:
+            if stats["Sharpe Ratio"].values > 0.9:
+                bt.plot(filename=f"GeneratedDatas/graphs/{stats["Sharpe Ratio"][0]}-{ticker}-{dt.datetime.now()}", open_browser=False)
             
-            bt = Backtest(OHLC, SignalStrategy, cash=cash)
-            stats: pd.DataFrame = bt.run().to_frame().T
-            stats["indicators_used"] = str(indicators_info)
-            stats["ticker"] = ticker
-            stats["datetime"] = dt.datetime.now()
-            stats = stats.drop(columns={col for col in stats.columns if col not in col_to_keep})
-            print("Sharpe Ratio tested ", stats["Sharpe Ratio"][0], sep="= ")
-            if np.isnan(stats["Sharpe Ratio"][0]):
-                continue
+            stats.to_sql(name='outputs', con=db_con, if_exists="append", index=False)
 
-            if not Path(tested_backtests_path).exists() or os.stat(tested_backtests_path).st_size == 0:
-                stats.to_csv(tested_backtests_path, index=False)
-            else:
-                tested_backtests = pd.read_csv(tested_backtests_path)
-                fifth_percentile_sharpe = np.percentile(tested_backtests["Sharpe Ratio"], 95)
-
-                if stats["Sharpe Ratio"].values > fifth_percentile_sharpe:
-                    bt.plot(filename=f"GeneratedDatas/graphs/{stats["Sharpe Ratio"][0]}-{ticker}-{dt.datetime.now()}", open_browser=False)
-
-                tested_backtests = pd.concat([tested_backtests, stats], axis=0, ignore_index=True).sort_values("Sharpe Ratio", ascending=False)
-                tested_backtests.to_csv(tested_backtests_path, index=False)
-
-        except Exception as e:
-            with open("GeneratedDatas/logs.txt", "a") as f:
-                f.write(f"{dt.datetime.now()}: {e} \n")
+    except Exception as e:
+        print(e)
+        with open("GeneratedDatas/logs.txt", "a") as f:
+            f.write(f"{dt.datetime.now()}: {e} \n")
 
 
 if __name__ == "__main__":
-    init_folders()
     runBacktest()

@@ -1,11 +1,18 @@
-from fetchdata import Data
 import random as rnd
+from fetchdata import Data
 import talib as ta
+import numpy as np
+import pandas as pd
 
 # Momentum Indicators
-class RSI(Data):
+class RSI:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+
         self.indicator_type = {
             "Relation": "bound_related",
         }
@@ -25,9 +32,14 @@ class RSI(Data):
     def calculate(self) -> dict:
         return {f"RSI_{self.period}": ta.RSI(self.Close, self.period)}
     
-class ADX(Data):
+class ADX:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+
         self.indicator_type = {
             "Relation": "bound_related",
         }
@@ -48,9 +60,14 @@ class ADX(Data):
         return {f"ADX_{self.period}": ta.ADX(self.High, self.Low, self.Close, self.period)}
 
 
-class ADXR(Data):
+class ADXR:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+        
         self.indicator_type = {
             "Relation": "bound_related",
         }
@@ -71,9 +88,14 @@ class ADXR(Data):
         return {f"ADXR_{self.period}": ta.ADXR(self.High, self.Low, self.Close, self.period)}
     
 
-class APO(Data):
+class APO:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+        
         self.indicator_type = {
             "Relation": "bound_related",
         }
@@ -96,9 +118,14 @@ class APO(Data):
         return {f"APO_{self.fast_period}_{self.slow_period}": ta.APO(self.Close, self.fast_period, self.slow_period, matype=0)}
 
 
-class BOP(Data):
+class BOP:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+        
         self.indicator_type = {
             "Relation": "bound_related",
         }
@@ -116,9 +143,14 @@ class BOP(Data):
         return {f"BOP": ta.BOP(self.Open, self.High, self.Low, self.Close)}
 
 
-class CCI(Data):
+class CCI:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+        
         self.indicator_type = {
             "Relation": "bound_related",
         }
@@ -139,9 +171,14 @@ class CCI(Data):
         return {f"CCI_{self.period}": ta.CCI(self.High, self.Low, self.Close, self.period)}
 
 
-class CMO(Data):
+class CMO:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+        
         self.indicator_type = {
             "Relation": "bound_related",
         }
@@ -162,10 +199,50 @@ class CMO(Data):
         return {f"CMO_{self.period}": ta.CMO(self.Close, self.period)}
     
 
-# Overlap Studies
-class SMA(Data):
+class MACD:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+        
+        self.indicator_type = {
+            "Relation": "bound_related",
+        }
+        self.fast_period, self.slow_period, self.signal_period = self.rnd_period()
+        self.signal = self.rnd_bound()
+        self.upper_bound = self.signal["upper_bound"]
+        self.lower_bound = self.signal["lower_bound"]
+
+    def rnd_period(self) -> int:
+        fast_period = rnd.randint(2, 25)
+        slow_period = rnd.randint(fast_period, 50)
+        signal_period = rnd.randint(2, 25)
+        return fast_period, slow_period, signal_period
+
+    def rnd_bound(self) -> dict:
+        upper_bound = 0
+        lower_bound = 0
+        return {"upper_bound": upper_bound, "lower_bound": lower_bound}
+
+    def calculate(self) -> dict:
+        macd, macdsignal, macdhist = ta.MACD(self.Close, self.fast_period, self.slow_period, self.signal_period)
+        macd_df = pd.DataFrame({"macd": macd.values, "macd_signal": macdsignal.values}).set_index(macd.index)
+        macd_df['crossover'] = np.where(macd_df["macd"].values > macd_df["macd_signal"].values, 1, -1)
+        macd_series = pd.Series(macd_df["crossover"])
+        return {f"MACD_{self.fast_period}_{self.slow_period}_{self.signal_period}": macd_series}
+
+
+# Overlap Studies
+class SMA:
+    def __init__(self, OHLC) -> None:
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+        
         self.indicator_type = {
             "Relation": "price_related",
         }
@@ -182,9 +259,14 @@ class SMA(Data):
         return {f"Signal_SMA_{self.period}": signal} 
 
 
-class EMA(Data):
+class EMA:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+        
         self.indicator_type = {
             "Relation": "price_related",
         }
@@ -197,9 +279,14 @@ class EMA(Data):
         return {f"EMA_{self.period}": ta.EMA(self.Close, self.period)} 
     
 
-class HT_TRENDLINE(Data):
+class HT_TRENDLINE:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+        
         self.indicator_type = {
             "Relation": "price_related",
         }
@@ -208,9 +295,14 @@ class HT_TRENDLINE(Data):
         return {f"HT_TRENDLINE": ta.HT_TRENDLINE(self.Close)} 
     
 
-class DEMA(Data):
+class DEMA:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+
         self.indicator_type = {
             "Relation": "price_related",
         }
@@ -223,9 +315,14 @@ class DEMA(Data):
         return {f"DEMA_{self.period}": ta.DEMA(self.Close, self.period)}
     
 
-class KAMA(Data):
+class KAMA:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+
         self.indicator_type = {
             "Relation": "price_related",
         }
@@ -238,9 +335,14 @@ class KAMA(Data):
         return {f"KAMA_{self.period}": ta.KAMA(self.Close, self.period)}
     
 
-class MA(Data):
+class MA:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+
         self.indicator_type = {
             "Relation": "price_related",
         }
@@ -253,9 +355,14 @@ class MA(Data):
         return {f"MA_{self.period}": ta.MA(self.Close, self.period)}
     
 
-class MIDPOINT(Data):
+class MIDPOINT:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+
         self.indicator_type = {
             "Relation": "price_related",
         }
@@ -268,9 +375,14 @@ class MIDPOINT(Data):
         return {f"MIDPOINT_{self.period}": ta.MIDPOINT(self.Close, self.period)}
     
 
-class MIDPRICE(Data):
+class MIDPRICE:
     def __init__(self, OHLC) -> None:
-        super().__init__(OHLC)
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+
         self.indicator_type = {
             "Relation": "price_related",
         }
@@ -281,3 +393,16 @@ class MIDPRICE(Data):
     
     def calculate(self) -> dict:
         return {f"MIDPRICE_{self.period}": ta.MIDPRICE(self.High, self.Low, self.period)}
+    
+
+# Other Stock Market Data
+class InterMarketIndicator(Data):
+    def __init__(self, OHLC) -> None:
+        super().__init__()
+        self.OHLC = OHLC
+        self.Open = self.OHLC["Open"]
+        self.High = self.OHLC["High"]
+        self.Low = self.OHLC["Low"]
+        self.Close = self.OHLC["Close"]
+    
+    # TODO: Add other securities for pair trading

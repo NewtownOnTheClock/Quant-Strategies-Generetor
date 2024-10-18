@@ -1,5 +1,4 @@
 from backtesting import Strategy, Backtest
-from strategiebuilder import StrategyGenerator
 import pandas as pd
 import numpy as np
 import datetime as dt
@@ -30,8 +29,7 @@ class SignalStrategy(Strategy):
                 self.position.close()
 
 
-def runBacktest(db_con, cash=1_000_000):
-    #tested_backtests_path = "GeneratedDatas/tested_backtests.csv"
+def runBacktest(db_con, OHLC, indicators_info, ticker, sharpe_saving_threshold, cash=1_000_000):
     col_to_keep = ["Start", 
                    "End", 
                    "Duration", 
@@ -64,11 +62,7 @@ def runBacktest(db_con, cash=1_000_000):
                    "ticker",
                    "datetime"]
     
-
-        # Get the OHLC data
-    OHLC, indicators_info, ticker = StrategyGenerator().signal()
     try:
-
         bt = Backtest(OHLC, SignalStrategy, cash=cash)
         stats: pd.DataFrame = bt.run().to_frame().T
         
@@ -111,8 +105,6 @@ def runBacktest(db_con, cash=1_000_000):
             "ticker": str,
             "datetime": str
         })
-
-        print("Sharpe Ratio tested", round(stats["Sharpe Ratio"][0], 3), sep=" = ")
         
         if np.isnan(stats["Sharpe Ratio"][0]):
             return
@@ -120,10 +112,11 @@ def runBacktest(db_con, cash=1_000_000):
         if not db_exist(db_con=db_con):
             stats.to_sql(name='outputs', con=db_con, if_exists="append", index=False)
         else:
-            if stats["Sharpe Ratio"].values > 0.9:
+            if stats["Sharpe Ratio"].values >= sharpe_saving_threshold:
                 bt.plot(filename=f"GeneratedDatas/graphs/{stats["Sharpe Ratio"][0]}-{ticker}-{dt.datetime.now()}", open_browser=False)
             
             stats.to_sql(name='outputs', con=db_con, if_exists="append", index=False)
+        return round(stats["Sharpe Ratio"][0], 3)
 
     except Exception as e:
         print(e)

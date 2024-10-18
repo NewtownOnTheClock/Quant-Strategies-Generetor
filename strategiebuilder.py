@@ -1,5 +1,4 @@
 import pandas as pd
-from fetchdata import Data
 from indicators import *
 import random as rnd
 import numpy as np
@@ -17,6 +16,7 @@ class IndicatorsPicker:
             BOP(self.OHLC),
             CCI(self.OHLC),
             CMO(self.OHLC),
+            MACD(self.OHLC),
 
             # Overlap studies
             SMA(self.OHLC),
@@ -99,8 +99,8 @@ class IndicatorsPicker:
     
 
 class StrategyGenerator(IndicatorsPicker):
-    def __init__(self, ticker="rnd") -> None:
-        self.choosen_ticker, self.OHLC = Data.get_OHLC(ticker)
+    def __init__(self, OHLC) -> None:
+        self.OHLC = OHLC 
         self.OHLC_and_indicators, self.indicators_info = IndicatorsPicker(self.OHLC).select_indicators()
         self.lng_price_related, self.shrt_price_related, self.lng_bnd_related, self.shrt_bnd_related = self.categorize_indicators()
     
@@ -265,4 +265,4 @@ class StrategyGenerator(IndicatorsPicker):
 
         self.OHLC_and_indicators["Signal"] = self.OHLC_and_indicators[[ind for ind in all_signal]].sum(axis=1)
     
-        return self.OHLC_and_indicators, self.indicators_info, self.choosen_ticker
+        return self.OHLC_and_indicators, self.indicators_info
